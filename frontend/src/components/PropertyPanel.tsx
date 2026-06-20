@@ -63,7 +63,7 @@ export function PropertyPanel() {
 
   const addOption = () => {
     const options = selectedNode.data.options || []
-    if (options.length >= 5) return
+    if (options.length >= 3) return
     const newOptions = [...options, { id: generateId('opt'), text: `选项${options.length + 1}` }]
     updateNodeData(selectedNode.id, { options: newOptions })
   }
@@ -156,7 +156,7 @@ export function PropertyPanel() {
               </label>
               <button
                 onClick={addOption}
-                disabled={(selectedNode.data.options?.length || 0) >= 5}
+                disabled={(selectedNode.data.options?.length || 0) >= 3}
                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
               >
                 <Plus size={14} />

@@ -329,6 +329,48 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
           gNode.attr('body/stroke', isCurrent ? '#ffd700' : color)
           gNode.attr('body/strokeWidth', isCurrent ? 3 : 2)
 
+          if (node.type === 'story') {
+            const expectedPortIds = getNodePorts(node).map((p) => p.id)
+            const currentPortIds = (gNode as any).getPorts().map((p: any) => p.id)
+            
+            const portsChanged =
+              expectedPortIds.length !== currentPortIds.length ||
+              !expectedPortIds.every((id, idx) => id === currentPortIds[idx])
+
+            if (portsChanged) {
+              const portsConfig = {
+                groups: {
+                  in: {
+                    position: 'left',
+                    attrs: {
+                      circle: {
+                        r: 4,
+                        magnet: true,
+                        stroke: color,
+                        strokeWidth: 1,
+                        fill: 'white',
+                      },
+                    },
+                  },
+                  out: {
+                    position: 'right',
+                    attrs: {
+                      circle: {
+                        r: 4,
+                        magnet: true,
+                        stroke: color,
+                        strokeWidth: 1,
+                        fill: 'white',
+                      },
+                    },
+                  },
+                },
+                items: getNodePorts(node),
+              }
+              ;(gNode as any).setPorts(portsConfig)
+            }
+          }
+
           const warningNodes = getWarningNodes(nodes, edges)
           const hasWarning = warningNodes.has(node.id) && !isSimulating
           
