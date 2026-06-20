@@ -331,7 +331,8 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
 
           if (node.type === 'story') {
             const expectedPortIds = getNodePorts(node).map((p) => p.id)
-            const currentPortIds = (gNode as any).getPorts().map((p: any) => p.id)
+            const currentPorts = gNode.prop('ports/items') || []
+            const currentPortIds = currentPorts.map((p: any) => p.id)
             
             const portsChanged =
               expectedPortIds.length !== currentPortIds.length ||
@@ -367,7 +368,7 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
                 },
                 items: getNodePorts(node),
               }
-              ;(gNode as any).setPorts(portsConfig)
+              gNode.prop('ports', portsConfig)
             }
           }
 
