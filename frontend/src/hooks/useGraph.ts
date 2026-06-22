@@ -40,7 +40,7 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
       },
       panning: {
         enabled: true,
-        eventTypes: ['leftMouseDown'],
+        eventTypes: ['rightMouseDown'],
       },
       mousewheel: {
         enabled: true,
@@ -198,7 +198,7 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
 
     const ports = getNodePorts(node)
 
-    const x6Node = graph.addNode({
+    const nodeConfig: any = {
       id: node.id,
       x: node.x,
       y: node.y,
@@ -250,43 +250,46 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
         },
         items: ports,
       },
-      tools: hasWarning
-        ? [
-            {
-              name: 'button',
-              args: {
-                x: '100%',
-                y: 0,
-                offset: { x: -5, y: 5 },
-                markup: [
-                  {
-                    tagName: 'circle',
-                    selector: 'button',
-                    attrs: {
-                      r: 10,
-                      fill: '#ef4444',
-                      cursor: 'pointer',
-                    },
-                  },
-                  {
-                    tagName: 'text',
-                    textContent: '!',
-                    selector: 'icon',
-                    attrs: {
-                      fill: 'white',
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      textAnchor: 'middle',
-                      textVerticalAnchor: 'middle',
-                      pointerEvents: 'none',
-                    },
-                  },
-                ],
+    }
+
+    if (hasWarning) {
+      nodeConfig.tools = [
+        {
+          name: 'button',
+          args: {
+            x: '100%',
+            y: 0,
+            offset: { x: -5, y: 5 },
+            markup: [
+              {
+                tagName: 'circle',
+                selector: 'button',
+                attrs: {
+                  r: 10,
+                  fill: '#ef4444',
+                  cursor: 'pointer',
+                },
               },
-            },
-          ]
-        : undefined,
-    })
+              {
+                tagName: 'text',
+                textContent: '!',
+                selector: 'icon',
+                attrs: {
+                  fill: 'white',
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  textAnchor: 'middle',
+                  textVerticalAnchor: 'middle',
+                  pointerEvents: 'none',
+                },
+              },
+            ],
+          },
+        },
+      ]
+    }
+
+    const x6Node = graph.addNode(nodeConfig)
 
     return x6Node
   }, [simulationState, isSimulating])
@@ -504,13 +507,25 @@ export function useGraph(containerRef: React.RefObject<HTMLDivElement>) {
     const options = graph.options as any
 
     if (isSimulating) {
-      options.panning.enabled = false
-      options.interacting.nodeMovable = false
-      options.connecting.allowBlank = false
+      if (options.panning) {
+        options.panning.enabled = false
+      }
+      if (options.interacting) {
+        options.interacting.nodeMovable = false
+      }
+      if (options.connecting) {
+        options.connecting.allowBlank = false
+      }
     } else {
-      options.panning.enabled = true
-      options.interacting.nodeMovable = true
-      options.connecting.allowBlank = true
+      if (options.panning) {
+        options.panning.enabled = true
+      }
+      if (options.interacting) {
+        options.interacting.nodeMovable = true
+      }
+      if (options.connecting) {
+        options.connecting.allowBlank = true
+      }
     }
   }, [isSimulating])
 

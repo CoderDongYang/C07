@@ -37,6 +37,15 @@ function App() {
   } = useGraph(containerRef)
 
   useEffect(() => {
+    if (nodes.length > 0) {
+      const timer = setTimeout(() => {
+        zoomToFit()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [nodes.length, zoomToFit])
+
+  useEffect(() => {
     const initStory = async () => {
       try {
         const stories = await storyApi.list()

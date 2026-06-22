@@ -67,7 +67,8 @@ export function Canvas({ containerRef, getGraphData, scrollTo, onAddNode }: Canv
       {!isSimulating && (
         <div className="absolute bottom-4 left-4 text-xs text-gray-400 pointer-events-none">
           <p>双击画布添加剧情节点</p>
-          <p>拖拽移动画布</p>
+          <p>右键拖拽移动画布</p>
+          <p>左键拖拽移动节点</p>
           <p>滚轮缩放</p>
         </div>
       )}
