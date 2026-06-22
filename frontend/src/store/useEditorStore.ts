@@ -7,6 +7,13 @@ import type {
   NodeType,
 } from '../types'
 
+interface HistorySnapshot {
+  nodes: StoryNode[]
+  edges: StoryEdge[]
+}
+
+const MAX_HISTORY_SIZE = 50
+
 interface EditorState {
   storyId: string | null
   storyTitle: string
@@ -27,6 +34,10 @@ interface EditorState {
     y: number
     nodeId: string | null
   }
+  past: HistorySnapshot[]
+  future: HistorySnapshot[]
+  canUndo: boolean
+  canRedo: boolean
 
   setStory: (id: string, title: string, nodes: StoryNode[], edges: StoryEdge[]) => void
   setStoryTitle: (title: string) => void
@@ -46,6 +57,8 @@ interface EditorState {
   setPan: (pan: { x: number; y: number }) => void
   showContextMenu: (x: number, y: number, nodeId: string | null) => void
   hideContextMenu: () => void
+  undo: () => void
+  redo: () => void
 
   startSimulation: () => void
   stopSimulation: () => void
@@ -85,6 +98,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     y: 0,
     nodeId: null,
   },
+  past: [],
+  future: [],
+  canUndo: false,
+  canRedo: false,
 
   setStory: (id, title, nodes, edges) => {
     set({
@@ -92,12 +109,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       storyTitle: title,
       nodes,
       edges,
+      past: [],
+      future: [],
+      canUndo: false,
+      canRedo: false,
     })
   },
 
   setStoryTitle: (title) => set({ storyTitle: title }),
 
   addNode: (type, x, y) => {
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
     const newNode: StoryNode = {
       id: generateId('node'),
       type,
@@ -118,46 +146,120 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         endingText: type === 'ending' ? '结局描述...' : undefined,
       },
     }
-    set((state) => ({ nodes: [...state.nodes, newNode] }))
+    set({
+      nodes: [...state.nodes, newNode],
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   updateNode: (id, updates) => {
-    set((state) => ({
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
+    set({
       nodes: state.nodes.map((n) => (n.id === id ? { ...n, ...updates } : n)),
-    }))
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   updateNodeData: (id, dataUpdates) => {
-    set((state) => ({
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
+    set({
       nodes: state.nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, ...dataUpdates } } : n,
       ),
-    }))
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   deleteNode: (id) => {
-    set((state) => ({
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
+    set({
       nodes: state.nodes.filter((n) => n.id !== id),
       edges: state.edges.filter((e) => e.source !== id && e.target !== id),
       selectedNodeId: state.selectedNodeId === id ? null : state.selectedNodeId,
-    }))
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   addEdge: (edge) => {
-    set((state) => ({ edges: [...state.edges, edge] }))
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
+    set({
+      edges: [...state.edges, edge],
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   updateEdge: (id, updates) => {
-    set((state) => ({
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
+    set({
       edges: state.edges.map((e) => (e.id === id ? { ...e, ...updates } : e)),
-    }))
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   deleteEdge: (id) => {
-    set((state) => ({
+    const state = get()
+    const snapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+    const newPast = [...state.past, snapshot].slice(-MAX_HISTORY_SIZE)
+
+    set({
       edges: state.edges.filter((e) => e.id !== id),
       selectedEdgeId: state.selectedEdgeId === id ? null : state.selectedEdgeId,
-    }))
+      past: newPast,
+      future: [],
+      canUndo: true,
+      canRedo: false,
+    })
   },
 
   setSelectedNode: (id) => set({ selectedNodeId: id, selectedEdgeId: null }),
@@ -180,6 +282,46 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       contextMenu: { ...state.contextMenu, visible: false },
     }))
+  },
+
+  undo: () => {
+    const state = get()
+    if (state.past.length === 0 || state.isSimulating) return
+
+    const previous = state.past[state.past.length - 1]
+    const currentSnapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+
+    set({
+      nodes: previous.nodes,
+      edges: previous.edges,
+      past: state.past.slice(0, -1),
+      future: [currentSnapshot, ...state.future],
+      canUndo: state.past.length > 1,
+      canRedo: true,
+    })
+  },
+
+  redo: () => {
+    const state = get()
+    if (state.future.length === 0 || state.isSimulating) return
+
+    const next = state.future[0]
+    const currentSnapshot: HistorySnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    }
+
+    set({
+      nodes: next.nodes,
+      edges: next.edges,
+      past: [...state.past, currentSnapshot],
+      future: state.future.slice(1),
+      canUndo: true,
+      canRedo: state.future.length > 1,
+    })
   },
 
   startSimulation: () => {

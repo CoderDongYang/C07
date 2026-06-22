@@ -11,7 +11,6 @@ import { useGraph } from './hooks/useGraph'
 
 function App() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const isSimulating = useEditorStore((state) => state.isSimulating)
   const stopSimulation = useEditorStore((state) => state.stopSimulation)
   const nodes = useEditorStore((state) => state.nodes)
   const edges = useEditorStore((state) => state.edges)
@@ -22,6 +21,9 @@ function App() {
   const setLastSavedAt = useEditorStore((state) => state.setLastSavedAt)
   const setValidationResult = useEditorStore((state) => state.setValidationResult)
   const addNode = useEditorStore((state) => state.addNode)
+  const undo = useEditorStore((state) => state.undo)
+  const redo = useEditorStore((state) => state.redo)
+  const isSimulating = useEditorStore((state) => state.isSimulating)
 
   const saveTimeoutRef = useRef<number | null>(null)
 
@@ -97,6 +99,26 @@ function App() {
   }, [storyId, storyTitle, nodes, edges, setSaving, setValidationResult, setLastSavedAt])
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSimulating) return
+
+      const isUndo = (e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey
+      const isRedo = (e.metaKey || e.ctrlKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey)) && e.shiftKey
+
+      if (isUndo) {
+        e.preventDefault()
+        undo()
+      } else if (isRedo) {
+        e.preventDefault()
+        redo()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSimulating, undo, redo])
+
+  useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
       debouncedSave()
     }
@@ -153,6 +175,8 @@ function App() {
         onCenter={centerCanvas}
         onAddNode={handleAddNode}
         onSave={handleSave}
+        onUndo={undo}
+        onRedo={redo}
       />
 
       <div className="flex-1 flex overflow-hidden">

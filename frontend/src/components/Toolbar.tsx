@@ -7,6 +7,8 @@ import {
   Maximize2,
   Save,
   AlertTriangle,
+  Undo2,
+  Redo2,
 } from 'lucide-react'
 import { useEditorStore } from '../store/useEditorStore'
 import type { NodeType } from '../types'
@@ -18,6 +20,8 @@ interface ToolbarProps {
   onCenter: () => void
   onAddNode: (type: NodeType) => void
   onSave: () => void
+  onUndo: () => void
+  onRedo: () => void
 }
 
 export function Toolbar({
@@ -27,6 +31,8 @@ export function Toolbar({
   onCenter,
   onAddNode,
   onSave,
+  onUndo,
+  onRedo,
 }: ToolbarProps) {
   const isSimulating = useEditorStore((state) => state.isSimulating)
   const startSimulation = useEditorStore((state) => state.startSimulation)
@@ -36,6 +42,8 @@ export function Toolbar({
   const lastSavedAt = useEditorStore((state) => state.lastSavedAt)
   const validationResult = useEditorStore((state) => state.validationResult)
   const nodes = useEditorStore((state) => state.nodes)
+  const canUndo = useEditorStore((state) => state.canUndo)
+  const canRedo = useEditorStore((state) => state.canRedo)
 
   const hasErrors = validationResult && !validationResult.valid
   const errorCount = validationResult?.errors.length || 0
@@ -46,6 +54,27 @@ export function Toolbar({
         <h1 className="text-lg font-semibold text-gray-800 min-w-[150px] truncate">
           {storyTitle}
         </h1>
+
+        {!isSimulating && (
+          <div className="flex items-center gap-1 border-l border-gray-200 pl-4">
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="撤销 (Ctrl+Z)"
+            >
+              <Undo2 size={18} />
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="重做 (Ctrl+Shift+Z)"
+            >
+              <Redo2 size={18} />
+            </button>
+          </div>
+        )}
 
         {!isSimulating && (
           <div className="flex items-center gap-1 border-l border-gray-200 pl-4">
